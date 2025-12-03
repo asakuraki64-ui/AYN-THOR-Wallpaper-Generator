@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastMouseY = 0;
 
     // Gap height
-    let gapHeight = 0;
+    let gapHeight = 220;
 
     // Event Listeners
     imageInput.addEventListener('change', handleImageUpload);
@@ -271,8 +271,8 @@ document.addEventListener('DOMContentLoaded', function() {
         scale = 1.0;
         offsetX = 0;
         offsetY = 0;
-        gapHeight = 0;
-        gapInput.value = '0';
+        gapHeight = 220;
+        gapInput.value = '220';
         topCtx.clearRect(0, 0, TOP_WIDTH, TOP_HEIGHT);
         bottomCtx.clearRect(0, 0, BOTTOM_OUTPUT_WIDTH, BOTTOM_OUTPUT_HEIGHT);
         const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
