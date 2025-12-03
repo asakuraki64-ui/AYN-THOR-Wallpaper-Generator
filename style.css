@@ -149,60 +149,6 @@ header .subtitle {
     border-color: #00adb5;
 }
 
-.zoom-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(50, 50, 70, 0.8);
-    padding: 12px 20px;
-    border-radius: 10px;
-    border: 1px solid #555;
-}
-
-.zoom-control label {
-    font-size: 1.1rem;
-    color: #00d4ff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.zoom-control input[type="range"] {
-    width: 120px;
-    height: 8px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #333;
-    border-radius: 4px;
-    outline: none;
-}
-
-.zoom-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #00adb5;
-    cursor: pointer;
-    border: 2px solid #fff;
-}
-
-.zoom-control input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #00adb5;
-    cursor: pointer;
-    border: 2px solid #fff;
-}
-
-.zoom-control #zoomValue {
-    font-size: 1.1rem;
-    color: #fff;
-    min-width: 50px;
-    text-align: center;
-}
 
 .btn {
     padding: 14px 28px;
