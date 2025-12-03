@@ -310,6 +310,7 @@ header .subtitle {
     object-fit: contain;
     display: none;
     cursor: grab;
+    touch-action: none; /* Prevent browser default touch actions (scroll, zoom) */
 }
 
 .combined-info {
