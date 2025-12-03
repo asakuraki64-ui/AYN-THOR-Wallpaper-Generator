@@ -39,6 +39,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastMouseX = 0;
     let lastMouseY = 0;
 
+    // Touch state for pinch zoom
+    let touchStartDistance = 0;
+    let touchStartScale = 1.0;
+    let touchStartOffsetX = 0;
+    let touchStartOffsetY = 0;
+    let touchStartCenterX = 0;
+    let touchStartCenterY = 0;
+    let isPinching = false;
+
     // Gap height
     let gapHeight = 0;
 
@@ -337,17 +346,117 @@ document.addEventListener('DOMContentLoaded', function() {
         drawAll();
     }
 
+    // Helper function to zoom at a specific point (similar to mouse wheel zoom)
+    function zoomAt(centerX, centerY, scaleFactor) {
+        if (!currentImage) return;
+        const rect = combinedCanvas.getBoundingClientRect();
+        const mouseX = centerX - rect.left;
+        const mouseY = centerY - rect.top;
+        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+
+        // Image point before scaling
+        const imgX = (mouseX - (COMBINED_WIDTH - currentImage.width * scale) / 2 - offsetX) / scale;
+        const imgY = (mouseY - (combinedHeight - currentImage.height * scale) / 2 - offsetY) / scale;
+
+        // Apply scale factor
+        scale *= scaleFactor;
+        // Clamp scale
+        scale = Math.max(0.1, Math.min(scale, 10));
+
+        // Adjust offset so the point under mouse stays fixed
+        const newX = (COMBINED_WIDTH - currentImage.width * scale) / 2 + offsetX;
+        const newY = (combinedHeight - currentImage.height * scale) / 2 + offsetY;
+        offsetX += mouseX - newX - imgX * scale;
+        offsetY += mouseY - newY - imgY * scale;
+
+        drawAll();
+    }
+
     // Touch handlers
     function touchStart(e) {
-        if (e.touches.length === 1) startDrag(e);
+        e.preventDefault();
+        if (!currentImage) return;
+        
+        if (e.touches.length === 1) {
+            // Single touch: start dragging
+            startDrag(e);
+            isPinching = false;
+        } else if (e.touches.length === 2) {
+            // Two touches: start pinch zoom
+            isDragging = false;
+            isPinching = true;
+            
+            // Calculate initial distance and center
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            touchStartDistance = getDistance(t1, t2);
+            touchStartScale = scale;
+            touchStartOffsetX = offsetX;
+            touchStartOffsetY = offsetY;
+            
+            // Center between the two touches in canvas coordinates
+            const rect = combinedCanvas.getBoundingClientRect();
+            touchStartCenterX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            touchStartCenterY = (t1.clientY + t2.clientY) / 2 - rect.top;
+        }
     }
 
     function touchMove(e) {
-        if (e.touches.length === 1) drag(e);
+        e.preventDefault();
+        if (!currentImage) return;
+        
+        if (e.touches.length === 1 && isDragging && !isPinching) {
+            // Single touch drag
+            drag(e);
+        } else if (e.touches.length === 2 && isPinching) {
+            // Pinch zoom
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const currentDistance = getDistance(t1, t2);
+            if (touchStartDistance === 0) return;
+            
+            // Calculate scale factor (how much the distance changed)
+            const scaleFactor = currentDistance / touchStartDistance;
+            // Use the current center as the zoom anchor
+            const rect = combinedCanvas.getBoundingClientRect();
+            const currentCenterX = (t1.clientX + t2.clientX) / 2;
+            const currentCenterY = (t1.clientY + t2.clientY) / 2;
+            
+            // Apply zoom at the current center
+            zoomAt(currentCenterX, currentCenterY, scaleFactor);
+            
+            // Update start distance and scale for the next move to be smooth
+            touchStartDistance = currentDistance;
+            touchStartScale = scale;
+            touchStartOffsetX = offsetX;
+            touchStartOffsetY = offsetY;
+            touchStartCenterX = currentCenterX - rect.left;
+            touchStartCenterY = currentCenterY - rect.top;
+        }
     }
 
     function touchEnd(e) {
-        endDrag();
+        e.preventDefault();
+        if (e.touches.length === 0) {
+            // No touches left
+            isDragging = false;
+            isPinching = false;
+            endDrag();
+        } else if (e.touches.length === 1) {
+            // One touch left, switch to dragging if not pinching
+            if (isPinching) {
+                isPinching = false;
+                // Start drag with the remaining touch
+                startDrag(e);
+            }
+        }
+    }
+
+    // Helper functions for touch
+    function getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     // Initialize placeholders
