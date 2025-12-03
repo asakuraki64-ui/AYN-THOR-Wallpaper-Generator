@@ -39,15 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastMouseX = 0;
     let lastMouseY = 0;
 
-    // Touch state for pinch zoom
-    let touchStartDistance = 0;
-    let touchStartScale = 1.0;
-    let touchStartOffsetX = 0;
-    let touchStartOffsetY = 0;
-    let touchStartCenterX = 0;
-    let touchStartCenterY = 0;
-    let isPinching = false;
-
     // Gap height
     let gapHeight = 0;
 
@@ -346,117 +337,90 @@ document.addEventListener('DOMContentLoaded', function() {
         drawAll();
     }
 
-    // Helper function to zoom at a specific point (similar to mouse wheel zoom)
-    function zoomAt(centerX, centerY, scaleFactor) {
-        if (!currentImage) return;
-        const rect = combinedCanvas.getBoundingClientRect();
-        const mouseX = centerX - rect.left;
-        const mouseY = centerY - rect.top;
-        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
-
-        // Image point before scaling
-        const imgX = (mouseX - (COMBINED_WIDTH - currentImage.width * scale) / 2 - offsetX) / scale;
-        const imgY = (mouseY - (combinedHeight - currentImage.height * scale) / 2 - offsetY) / scale;
-
-        // Apply scale factor
-        scale *= scaleFactor;
-        // Clamp scale
-        scale = Math.max(0.1, Math.min(scale, 10));
-
-        // Adjust offset so the point under mouse stays fixed
-        const newX = (COMBINED_WIDTH - currentImage.width * scale) / 2 + offsetX;
-        const newY = (combinedHeight - currentImage.height * scale) / 2 + offsetY;
-        offsetX += mouseX - newX - imgX * scale;
-        offsetY += mouseY - newY - imgY * scale;
-
-        drawAll();
-    }
-
     // Touch handlers
+    let initialPinchDistance = null;
+    let initialScale = 1.0;
+    let initialOffsetX = 0;
+    let initialOffsetY = 0;
+    let isPinching = false;
+
     function touchStart(e) {
-        e.preventDefault();
-        if (!currentImage) return;
-        
         if (e.touches.length === 1) {
-            // Single touch: start dragging
             startDrag(e);
             isPinching = false;
         } else if (e.touches.length === 2) {
-            // Two touches: start pinch zoom
-            isDragging = false;
+            // Start pinch zoom
+            e.preventDefault();
             isPinching = true;
-            
-            // Calculate initial distance and center
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
-            touchStartDistance = getDistance(t1, t2);
-            touchStartScale = scale;
-            touchStartOffsetX = offsetX;
-            touchStartOffsetY = offsetY;
-            
-            // Center between the two touches in canvas coordinates
+            isDragging = false;
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            initialPinchDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            initialScale = scale;
+            initialOffsetX = offsetX;
+            initialOffsetY = offsetY;
+            // Calculate center point between two touches
             const rect = combinedCanvas.getBoundingClientRect();
-            touchStartCenterX = (t1.clientX + t2.clientX) / 2 - rect.left;
-            touchStartCenterY = (t1.clientY + t2.clientY) / 2 - rect.top;
+            const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+            const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+            // Store center for later offset adjustment
+            combinedCanvas.dataset.pinchCenterX = centerX;
+            combinedCanvas.dataset.pinchCenterY = centerY;
         }
     }
 
     function touchMove(e) {
-        e.preventDefault();
-        if (!currentImage) return;
-        
-        if (e.touches.length === 1 && isDragging && !isPinching) {
-            // Single touch drag
+        if (isPinching && e.touches.length === 2) {
+            e.preventDefault();
+            if (!currentImage) return;
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            if (initialPinchDistance !== null && currentDistance > 0) {
+                const ratio = currentDistance / initialPinchDistance;
+                const newScale = initialScale * ratio;
+                // Clamp scale
+                scale = Math.max(0.1, Math.min(newScale, 10));
+                // Adjust offset to keep the center point fixed
+                const centerX = parseFloat(combinedCanvas.dataset.pinchCenterX);
+                const centerY = parseFloat(combinedCanvas.dataset.pinchCenterY);
+                const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+                // Calculate image point before scaling
+                const imgX = (centerX - (COMBINED_WIDTH - currentImage.width * initialScale) / 2 - initialOffsetX) / initialScale;
+                const imgY = (centerY - (combinedHeight - currentImage.height * initialScale) / 2 - initialOffsetY) / initialScale;
+                // New offset to keep the same point under the center
+                const newX = (COMBINED_WIDTH - currentImage.width * scale) / 2 + offsetX;
+                const newY = (combinedHeight - currentImage.height * scale) / 2 + offsetY;
+                offsetX = initialOffsetX + (centerX - newX - imgX * scale);
+                offsetY = initialOffsetY + (centerY - newY - imgY * scale);
+                drawAll();
+            }
+        } else if (e.touches.length === 1 && !isPinching) {
             drag(e);
-        } else if (e.touches.length === 2 && isPinching) {
-            // Pinch zoom
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
-            const currentDistance = getDistance(t1, t2);
-            if (touchStartDistance === 0) return;
-            
-            // Calculate scale factor (how much the distance changed)
-            const scaleFactor = currentDistance / touchStartDistance;
-            // Use the current center as the zoom anchor
-            const rect = combinedCanvas.getBoundingClientRect();
-            const currentCenterX = (t1.clientX + t2.clientX) / 2;
-            const currentCenterY = (t1.clientY + t2.clientY) / 2;
-            
-            // Apply zoom at the current center
-            zoomAt(currentCenterX, currentCenterY, scaleFactor);
-            
-            // Update start distance and scale for the next move to be smooth
-            touchStartDistance = currentDistance;
-            touchStartScale = scale;
-            touchStartOffsetX = offsetX;
-            touchStartOffsetY = offsetY;
-            touchStartCenterX = currentCenterX - rect.left;
-            touchStartCenterY = currentCenterY - rect.top;
         }
     }
 
     function touchEnd(e) {
-        e.preventDefault();
         if (e.touches.length === 0) {
             // No touches left
-            isDragging = false;
             isPinching = false;
+            initialPinchDistance = null;
             endDrag();
         } else if (e.touches.length === 1) {
-            // One touch left, switch to dragging if not pinching
-            if (isPinching) {
-                isPinching = false;
-                // Start drag with the remaining touch
-                startDrag(e);
-            }
+            // One touch left, switch to dragging
+            isPinching = false;
+            initialPinchDistance = null;
+            // Update lastMouseX/Y for continuous drag
+            lastMouseX = e.touches[0].clientX;
+            lastMouseY = e.touches[0].clientY;
         }
-    }
-
-    // Helper functions for touch
-    function getDistance(touch1, touch2) {
-        const dx = touch1.clientX - touch2.clientX;
-        const dy = touch1.clientY - touch2.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
+        // If there are still two touches, do nothing (still pinching)
     }
 
     // Initialize placeholders
