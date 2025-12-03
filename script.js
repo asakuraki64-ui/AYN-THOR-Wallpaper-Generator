@@ -135,6 +135,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Helper to get scale factor between canvas display size and actual size
+    function getCanvasScale(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return { scaleX, scaleY };
+    }
+
+    // Convert client coordinates to canvas internal coordinates
+    function clientToCanvas(clientX, clientY) {
+        const rect = combinedCanvas.getBoundingClientRect();
+        const { scaleX, scaleY } = getCanvasScale(combinedCanvas);
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+        return { x, y };
+    }
+
     // Draw image on all canvases
     function drawAll() {
         if (!currentImage) return;
@@ -281,8 +298,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function startDrag(e) {
         if (!currentImage) return;
         isDragging = true;
-        lastMouseX = e.clientX || e.touches[0].clientX;
-        lastMouseY = e.clientY || e.touches[0].clientY;
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+        const { x, y } = clientToCanvas(clientX, clientY);
+        lastMouseX = x;
+        lastMouseY = y;
         combinedCanvas.style.cursor = 'grabbing';
         e.preventDefault();
     }
@@ -293,12 +313,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
         if (!clientX || !clientY) return;
 
-        const deltaX = clientX - lastMouseX;
-        const deltaY = clientY - lastMouseY;
+        const { x: canvasX, y: canvasY } = clientToCanvas(clientX, clientY);
+        const deltaX = canvasX - lastMouseX;
+        const deltaY = canvasY - lastMouseY;
         offsetX += deltaX;
         offsetY += deltaY;
-        lastMouseX = clientX;
-        lastMouseY = clientY;
+        lastMouseX = canvasX;
+        lastMouseY = canvasY;
         drawAll();
         e.preventDefault();
     }
@@ -313,8 +334,10 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const zoomFactor = 0.1;
         const rect = combinedCanvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        const { scaleX, scaleY } = getCanvasScale(combinedCanvas);
+        // Adjust mouse coordinates to canvas internal coordinates
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
 
         // Dynamic combined height based on gap
         const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
@@ -367,10 +390,11 @@ document.addEventListener('DOMContentLoaded', function() {
             initialScale = scale;
             initialOffsetX = offsetX;
             initialOffsetY = offsetY;
-            // Calculate center point between two touches
-            const rect = combinedCanvas.getBoundingClientRect();
-            const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
-            const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+            // Calculate center point between two touches in client coordinates
+            const clientCenterX = (touch1.clientX + touch2.clientX) / 2;
+            const clientCenterY = (touch1.clientY + touch2.clientY) / 2;
+            // Convert to canvas coordinates
+            const { x: centerX, y: centerY } = clientToCanvas(clientCenterX, clientCenterY);
             // Store center for later offset adjustment
             combinedCanvas.dataset.pinchCenterX = centerX;
             combinedCanvas.dataset.pinchCenterY = centerY;
