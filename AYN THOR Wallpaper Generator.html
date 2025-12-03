@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Screen Wallpaper Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-layer-group"></i> ayn thor双屏壁纸小工具 By Aki</h1>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drag & Drop Your Image Here</h3>
+                    <p>or click to browse (JPEG, PNG, WebP, etc.)</p>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                <div class="controls">
+                    <button id="resetBtn" class="btn secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                    <div class="gap-control">
+                        <label for="gapInput"><i class="fas fa-arrows-alt-v"></i> Gap Height (px):</label>
+                        <input type="number" id="gapInput" min="0" max="500" value="0" step="1">
+                    </div>
+                    <div class="interaction-hint">
+                        <i class="fas fa-hand-pointer"></i> Drag image to move · <i class="fas fa-search"></i> Mouse wheel to zoom
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="screen-container">
+                    <div class="screen-header">
+                        <h2><i class="fas fa-tv"></i> Top Screen (1920×1080)</h2>
+                        <button id="saveTopBtn" class="btn save-btn">
+                            <i class="fas fa-download"></i> Save as PNG
+                        </button>
+                    </div>
+                    <div class="screen-preview" id="topScreen">
+                        <canvas id="topCanvas" width="1920" height="1080"></canvas>
+                        <div class="placeholder" id="topPlaceholder">
+                            <i class="fas fa-image"></i>
+                            <p>Top screen preview</p>
+                        </div>
+                    </div>
+                    <p class="screen-info">This will be your top screen wallpaper.</p>
+                </div>
+
+                <div class="screen-container">
+                    <div class="screen-header">
+                        <h2><i class="fas fa-tv"></i> Bottom Screen (1240×1080)</h2>
+                        <button id="saveBottomBtn" class="btn save-btn">
+                            <i class="fas fa-download"></i> Save as PNG
+                        </button>
+                    </div>
+                    <div class="screen-preview" id="bottomScreen">
+                        <canvas id="bottomCanvas" width="1240" height="1080"></canvas>
+                        <div class="placeholder" id="bottomPlaceholder">
+                            <i class="fas fa-image"></i>
+                            <p>Bottom screen preview</p>
+                        </div>
+                    </div>
+                    <p class="screen-info">This will be your bottom screen wallpaper.</p>
+                </div>
+            </div>
+
+            <div class="combined-preview">
+                <h2><i class="fas fa-th-large"></i> Combined Preview (1920×2160)</h2>
+                <div class="combined-container">
+                    <canvas id="combinedCanvas" width="1920" height="2160"></canvas>
+                    <div class="placeholder" id="combinedPlaceholder">
+                        <i class="fas fa-th-large"></i>
+                        <p>Full wallpaper preview (top + bottom)</p>
+                    </div>
+                </div>
+                <p class="combined-info">The entire wallpaper that will be split into two screens.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
