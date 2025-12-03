@@ -445,9 +445,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // One touch left, switch to dragging
             isPinching = false;
             initialPinchDistance = null;
-            // Update lastMouseX/Y for continuous drag
-            lastMouseX = e.touches[0].clientX;
-            lastMouseY = e.touches[0].clientY;
+            // Update lastMouseX/Y for continuous drag (convert to canvas coordinates)
+            const clientX = e.touches[0].clientX;
+            const clientY = e.touches[0].clientY;
+            const { x, y } = clientToCanvas(clientX, clientY);
+            lastMouseX = x;
+            lastMouseY = y;
         }
         // If there are still two touches, do nothing (still pinching)
     }

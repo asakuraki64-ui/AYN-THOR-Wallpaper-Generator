@@ -240,6 +240,9 @@ header .subtitle {
     border-radius: 12px;
     overflow: hidden;
     border: 3px solid #555;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .screen-preview canvas {
@@ -247,10 +250,8 @@ header .subtitle {
     max-height: 100%;
     object-fit: contain;
     display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    /* Remove absolute positioning, rely on flex centering */
+    position: static;
 }
 
 .placeholder {
