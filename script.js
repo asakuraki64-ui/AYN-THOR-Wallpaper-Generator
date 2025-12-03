@@ -24,8 +24,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Constants
     const TOP_WIDTH = 1920;
     const TOP_HEIGHT = 1080;
-    const BOTTOM_WIDTH = 1240;
-    const BOTTOM_HEIGHT = 1080;
+    const BOTTOM_CONTENT_WIDTH = 1240; // Actual content width for bottom screen
+    const BOTTOM_CONTENT_HEIGHT = 1080;
+    const BOTTOM_OUTPUT_WIDTH = 1920; // Output width with black borders
+    const BOTTOM_OUTPUT_HEIGHT = 1080;
     const COMBINED_WIDTH = TOP_WIDTH; // 1920 (max width)
     // COMBINED_HEIGHT will be computed dynamically based on gap
 
@@ -142,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Draw on combined canvas with current transformation
     function drawCombinedCanvas() {
-        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
         // Update canvas dimensions
         combinedCanvas.width = COMBINED_WIDTH;
         combinedCanvas.height = combinedHeight;
@@ -181,13 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Draw bottom screen crop indication (semi‑transparent gray overlay on sides)
         const bottomY = TOP_HEIGHT + gapHeight;
-        const bottomLeftX = (COMBINED_WIDTH - BOTTOM_WIDTH) / 2;
+        const bottomLeftX = (COMBINED_WIDTH - BOTTOM_CONTENT_WIDTH) / 2;
         const sideWidth = bottomLeftX; // 340
         combinedCtx.fillStyle = 'rgba(50, 50, 50, 0.7)';
         // Left side
-        combinedCtx.fillRect(0, bottomY, sideWidth, BOTTOM_HEIGHT);
+        combinedCtx.fillRect(0, bottomY, sideWidth, BOTTOM_CONTENT_HEIGHT);
         // Right side
-        combinedCtx.fillRect(bottomLeftX + BOTTOM_WIDTH, bottomY, sideWidth, BOTTOM_HEIGHT);
+        combinedCtx.fillRect(bottomLeftX + BOTTOM_CONTENT_WIDTH, bottomY, sideWidth, BOTTOM_CONTENT_HEIGHT);
 
         // Screen borders removed to avoid green border in saved images
 
@@ -199,21 +201,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function drawSplitCanvases() {
         // Clear canvases
         topCtx.clearRect(0, 0, TOP_WIDTH, TOP_HEIGHT);
-        bottomCtx.clearRect(0, 0, BOTTOM_WIDTH, BOTTOM_HEIGHT);
+        bottomCtx.clearRect(0, 0, BOTTOM_OUTPUT_WIDTH, BOTTOM_OUTPUT_HEIGHT);
 
-        // Draw background
+        // Draw background (black for bottom screen to create borders)
         topCtx.fillStyle = '#111';
         topCtx.fillRect(0, 0, TOP_WIDTH, TOP_HEIGHT);
-        bottomCtx.fillStyle = '#111';
-        bottomCtx.fillRect(0, 0, BOTTOM_WIDTH, BOTTOM_HEIGHT);
+        bottomCtx.fillStyle = '#000'; // Pure black for borders
+        bottomCtx.fillRect(0, 0, BOTTOM_OUTPUT_WIDTH, BOTTOM_OUTPUT_HEIGHT);
 
         // Copy from combined canvas
         // Top screen: full width (1920) at top
         topCtx.drawImage(combinedCanvas, 0, 0, TOP_WIDTH, TOP_HEIGHT, 0, 0, TOP_WIDTH, TOP_HEIGHT);
-        // Bottom screen: centered horizontally (since bottom screen is narrower)
-        const bottomSrcX = (COMBINED_WIDTH - BOTTOM_WIDTH) / 2; // (1920 - 1240) / 2 = 340
+        // Bottom screen: draw content centered on 1920x1080 canvas
+        const bottomSrcX = (COMBINED_WIDTH - BOTTOM_CONTENT_WIDTH) / 2; // (1920 - 1240) / 2 = 340
         const bottomSrcY = TOP_HEIGHT + gapHeight;
-        bottomCtx.drawImage(combinedCanvas, bottomSrcX, bottomSrcY, BOTTOM_WIDTH, BOTTOM_HEIGHT, 0, 0, BOTTOM_WIDTH, BOTTOM_HEIGHT);
+        const bottomDstX = (BOTTOM_OUTPUT_WIDTH - BOTTOM_CONTENT_WIDTH) / 2; // Center the content
+        bottomCtx.drawImage(combinedCanvas, bottomSrcX, bottomSrcY, BOTTOM_CONTENT_WIDTH, BOTTOM_CONTENT_HEIGHT, 
+                           bottomDstX, 0, BOTTOM_CONTENT_WIDTH, BOTTOM_CONTENT_HEIGHT);
 
         // Show canvases
         topCanvas.style.display = 'block';
@@ -253,8 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gapHeight = 0;
         gapInput.value = '0';
         topCtx.clearRect(0, 0, TOP_WIDTH, TOP_HEIGHT);
-        bottomCtx.clearRect(0, 0, BOTTOM_WIDTH, BOTTOM_HEIGHT);
-        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+        bottomCtx.clearRect(0, 0, BOTTOM_OUTPUT_WIDTH, BOTTOM_OUTPUT_HEIGHT);
+        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
         combinedCtx.clearRect(0, 0, COMBINED_WIDTH, combinedHeight);
         updatePlaceholders(true);
         updateZoomSlider();
@@ -314,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const mouseY = e.clientY - rect.top;
 
         // Dynamic combined height based on gap
-        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
 
         // Calculate image point before scaling
         const imgX = (mouseX - (COMBINED_WIDTH - currentImage.width * scale) / 2 - offsetX) / scale;
@@ -392,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Adjust offset to keep the center point fixed
                 const centerX = parseFloat(combinedCanvas.dataset.pinchCenterX);
                 const centerY = parseFloat(combinedCanvas.dataset.pinchCenterY);
-                const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+                const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
                 // Calculate image point before scaling
                 const imgX = (centerX - (COMBINED_WIDTH - currentImage.width * initialScale) / 2 - initialOffsetX) / initialScale;
                 const imgY = (centerY - (combinedHeight - currentImage.height * initialScale) / 2 - initialOffsetY) / initialScale;
