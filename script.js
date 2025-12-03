@@ -74,6 +74,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gap control events
     gapInput.addEventListener('input', applyGap); // update on input change
 
+    // Zoom slider
+    const zoomInput = document.getElementById('zoomInput');
+    const zoomValue = document.getElementById('zoomValue');
+    zoomInput.addEventListener('input', applyZoom);
+
     // Mouse interaction for combined canvas
     combinedCanvas.addEventListener('mousedown', startDrag);
     combinedCanvas.addEventListener('mousemove', drag);
@@ -256,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
         combinedCtx.clearRect(0, 0, COMBINED_WIDTH, combinedHeight);
         updatePlaceholders(true);
+        updateZoomSlider();
     }
 
     // Save canvas as PNG
@@ -423,6 +429,62 @@ document.addEventListener('DOMContentLoaded', function() {
         // If there are still two touches, do nothing (still pinching)
     }
 
+    // Apply zoom from slider
+    function applyZoom() {
+        if (!currentImage) return;
+        const percent = parseInt(zoomInput.value, 10);
+        // Convert percent to scale (100% = 1.0)
+        const newScale = percent / 100;
+        // Clamp
+        const clampedScale = Math.max(0.1, Math.min(newScale, 10));
+        // Zoom around center of canvas
+        const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_HEIGHT;
+        const centerX = COMBINED_WIDTH / 2;
+        const centerY = combinedHeight / 2;
+        // Calculate image point before scaling
+        const imgX = (centerX - (COMBINED_WIDTH - currentImage.width * scale) / 2 - offsetX) / scale;
+        const imgY = (centerY - (combinedHeight - currentImage.height * scale) / 2 - offsetY) / scale;
+        // Update scale
+        scale = clampedScale;
+        // Adjust offset so the same point stays under the center
+        const newX = (COMBINED_WIDTH - currentImage.width * scale) / 2 + offsetX;
+        const newY = (combinedHeight - currentImage.height * scale) / 2 + offsetY;
+        offsetX += centerX - newX - imgX * scale;
+        offsetY += centerY - newY - imgY * scale;
+        drawAll();
+        updateZoomValue();
+    }
+
+    // Update slider and value display to match current scale
+    function updateZoomSlider() {
+        const percent = Math.round(scale * 100);
+        zoomInput.value = percent;
+        updateZoomValue();
+    }
+
+    function updateZoomValue() {
+        const percent = Math.round(scale * 100);
+        zoomValue.textContent = percent + '%';
+    }
+
+    // Override zoom function to update slider
+    const originalZoom = zoom;
+    zoom = function(e) {
+        originalZoom.call(this, e);
+        updateZoomSlider();
+    };
+
+    // Override touchMove pinch to update slider
+    const originalTouchMove = touchMove;
+    touchMove = function(e) {
+        originalTouchMove.call(this, e);
+        if (isPinching && e.touches.length === 2) {
+            updateZoomSlider();
+        }
+    };
+
     // Initialize placeholders
     updatePlaceholders(true);
+    // Initialize zoom slider
+    updateZoomSlider();
 });
