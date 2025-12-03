@@ -261,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const combinedHeight = TOP_HEIGHT + gapHeight + BOTTOM_CONTENT_HEIGHT;
         combinedCtx.clearRect(0, 0, COMBINED_WIDTH, combinedHeight);
         updatePlaceholders(true);
-        updateZoomSlider();
     }
 
     // Save canvas as PNG
